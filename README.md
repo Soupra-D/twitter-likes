@@ -2,6 +2,9 @@
 
 Download your twitter likes using an enhanced version of https://gist.github.com/datagrok/74a71f572493e603919e
 
+This version will download pictures in a liked tweet.
+You need to change the storage path.
+
 ## prereqs
 
 - Install python 3
