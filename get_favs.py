@@ -45,8 +45,12 @@ in.
 """
 import tweepy
 import dbm
-import json
+import json as jsonLib
 import time
+from urllib.parse import urlparse
+import urllib.request
+import os
+import requests
 
 import creds  # you must create creds.py
 
@@ -54,31 +58,70 @@ import creds  # you must create creds.py
 def get_api():
     auth = tweepy.OAuthHandler(creds.consumer_key, creds.consumer_secret)
     auth.set_access_token(creds.access_token, creds.access_token_secret)
-    return tweepy.API(auth, wait_on_rate_limit=True)
+    return tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
+def dlImg(j):
+
+    orig = ":orig"
+    url = "https://twitter.com/i/web/status/"
+    cpt = 0
+
+    json = jsonLib.loads(j)
+    d = str(json['id'])
+    lienTweet = url + d
+    jsondump = open('jsonDump.txt', 'a')
+    if 'extended_entities' in json:
+
+        if 'photo' in json['extended_entities']['media'][0]['type']:
+
+            b = json['extended_entities']['media']
+            for index in range(0, len(b)):
+
+                creation = str(json['created_at']).replace('+0000 ','')
+                c=b[index]['media_url_https']
+                link = c + orig
+
+                r = requests.get(link)
+                if r.status_code == 200:
+                    file_name = os.path.basename(urlparse(c).path)
+                    #Yes dirty hard coded path...
+                    if os.path.isfile('/srv/dev-disk-by-uuid-44a3f2e3-2946-43e7-8027-9a9bf23a6122/Plex/Photo/Twitter/'+file_name):
+                        print("Files exist")
+                    else:
+                        jsondump.write(j + "\n")
+                        urllib.request.urlretrieve(link, '/srv/dev-disk-by-uuid-44a3f2e3-2946-43e7-8027-9a9bf23a6122/Plex/Photo/Twitter/'+file_name)
+                        print('Download image : ', file_name, ' from url : ', lienTweet)
+
+                    print(file_name)
+                else:
+                    print("link dead")
+    print("Done saving files.")
 
 def main():
     api = get_api()
     count = 0
-    with dbm.open('favs.db', 'c') as db, open('favs.ndjson', 'at', buffering=1) as jsonfile:
-        for status in tweepy.Cursor(api.get_favorites, screen_name=creds.username,
+    #I open jsondump 2 times but i'm too lazy to fix it
+    with dbm.open('favs.db', 'c') as db, open('favs.ndjson', 'at', buffering=1) as jsonfile, open('jsonDump.txt', 'a') as jsondump:
+        for status in tweepy.Cursor(api.favorites, creds.username,
                                     count=200, include_entities=True, tweet_mode='extended').items():
             count = count + 1
-            print(count)
+
             status_id = str(status.id)
-            status_json = json.dumps(status._json)
+            status_json = jsonLib.dumps(status._json)
             if status_id not in db:
                 db[status_id] = status_json
                 jsonfile.write(status_json + "\n")
+                print(count, ' - Tweet ID : ', status_id)
+                dlImg(status_json)
             else:
-                print(status_id + " exists in db")
+                print(count, " - ", status_id, " exists in db")
 
             # twitter rate-limits us to 15 requests / 15 minutes, so
             # space this out a bit to avoid a super-long sleep at the
             # end which could lose the connection.
             time.sleep(60 * 15 / (15 * 200))
-        print('Done.')
-
+        print('Done. Get new json.')
+        jsondump.close()
 
 if __name__ == '__main__':
     main()
