@@ -4,6 +4,7 @@ Download your twitter likes using an enhanced version of https://gist.github.com
 
 This version will download pictures in a liked tweet.
 You need to change the storage path.
+<br> Some features may not work properly, I added the download features before the OP updated  to Tweepe 4.
 
 ## prereqs
 
