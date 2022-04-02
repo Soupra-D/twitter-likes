@@ -4,3 +4,4 @@ favs.ndjson
 *.iml
 .idea/
 __pycache__/
+.github
