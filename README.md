@@ -1,3 +1,4 @@
+# Dead project unless you pay 100$/month, thanks Elon :)
 # twitter-likes
 
 Download your twitter likes using an enhanced version of https://gist.github.com/datagrok/74a71f572493e603919e
